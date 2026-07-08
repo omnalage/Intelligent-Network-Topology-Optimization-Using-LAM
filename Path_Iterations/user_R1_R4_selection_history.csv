@@ -1,0 +1,3 @@
+iteration,path_name,chosen_router,chosen_avg_score,chosen_CHR,chosen_Latency
+1,user_R1_R4,R1,0.75,9.0,1.2
+1,user_R1_R4,R1,False,True

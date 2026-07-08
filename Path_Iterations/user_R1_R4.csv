@@ -1,0 +1,5 @@
+iteration,path_name,Router,Cache occupy,CMBA,Latency(s),CHR,norm_CMBA,norm_CHR,norm_CacheOccupy,norm_Latency,avg_score
+1,user_R1_R4,R1,5.0,2.0,1.2,9.0,0.0,1.0,1.0,1.0,0.75
+1,user_R1_R4,R4,20.0,7.0,5.0,8.0,1.0,0.0,0.0,0.0,0.25
+1,user_R1_R4,R1,5.0,2.0,1.2,9.0,0.0,1.0,1.0,1.0,0.75
+1,user_R1_R4,R4,20.0,7.0,5.0,8.0,1.0,0.0,0.0,0.0,0.25

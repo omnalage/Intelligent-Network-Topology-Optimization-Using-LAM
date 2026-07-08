@@ -1,0 +1,38 @@
+TOPOLOGY RL IMPACT ANALYSIS
+Generated: 2026-04-03 15:07:06
+
+Network Scope:
+- Reduced topology used for speed: 10 routers
+- Subscriber movement changes only attachment points
+
+Scenario 1: Original topology, Agent A trained
+- Final reward: -0.004890
+- Average CHR: 0.000000
+- Average latency: 16.7600 ms
+
+Scenario 2: Changed topology, Agent B trained from scratch
+- Final reward: -0.005831
+- Average CHR: 0.000000
+- Average latency: 8.5828 ms
+- Reward change vs Scenario 1: 19.26%
+
+Scenario 3: Changed topology, Agent A reused without retraining
+- Final reward: 0.000000
+- Average CHR: 0.000000
+- Average latency: 0.0000 ms
+- Reward change vs Scenario 1: -100.00%
+
+Scenario 4: Changed topology, Agent A fine-tuned briefly
+- Final reward: -0.004611
+- Average CHR: 0.000000
+- Average latency: 1.5154 ms
+- Reward change vs Scenario 2: -20.92%
+
+Interpretation Guidance:
+- Scenario 2 shows the cost of relearning on the changed topology.
+- Scenario 3 shows transfer without adaptation.
+- Scenario 4 shows whether quick fine-tuning is enough for recovery.
+
+Presentation-safe claim:
+- Use the results to compare adaptation behavior across the same reduced 10-router setting.
+- Avoid claiming universal improvement; topology change can legitimately reduce performance.

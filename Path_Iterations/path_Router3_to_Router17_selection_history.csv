@@ -1,0 +1,6 @@
+iteration,path_name,manual_chosen_router,manual_chosen_avg
+1,path_Router3_to_Router17,Router27,0.8714102993042805
+2,path_Router3_to_Router17,Router27,0.8627199294274518
+3,path_Router3_to_Router17,Router27,0.889072143066229
+4,path_Router3_to_Router17,Router26,0.8625597164084147
+5,path_Router3_to_Router17,Router26,0.8734334477501073

@@ -1,0 +1,347 @@
+\documentclass{beamer}
+
+% --- THEME AND APPEARANCE ---
+\usetheme{Madrid}
+\usecolortheme{default}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+
+% --- REQUIRED PACKAGES ---
+\usepackage{fontspec}
+
+% --- FIX: SIMPLIFIED BABEL SETUP ---
+% We removed 'bidi' and 'provide=*' to stop the \englishdate error
+\usepackage[english]{babel}
+\babelfont{rm}{Arial}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{ragged2e}
+\usepackage{tikz}
+\usepackage{algpseudocode} % Needed for algorithmic environment
+
+% --- PRESENTATION METADATA ---
+\title[Intelligent Network Topology Optimization]{Intelligent Network Topology Optimization Using LAM}
+\author{Karan Khotare (BT22CSE111) \and Yash (BT22CSE110) \and Aman Raj (BT22CSE115) \and Om Ashok Nalage (BT22CSE117)}
+\institute{Department of Computer Science and Engineering}
+\date{\today}
+\subject{Final Year Project Presentation}
+
+% --- ADD LOGO TO TITLE PAGE ---
+\addtobeamertemplate{title page}{%
+  \begin{tikzpicture}[remember picture,overlay]
+    \node[anchor=north,yshift=-5.5cm,xshift=.05cm] at (current page.north) {
+      % Ensure logo.jpg exists in your folder, or this will error
+      \includegraphics[height=2cm]{logo.jpg}
+    };
+  \end{tikzpicture}%
+}
+
+% --- HELPER COMMAND FOR IMAGE PLACEHOLDERS ---
+% CRITICAL FIX: The line "\includegraphics...{logo.png}" was here.
+% You cannot put an image directly in the preamble. I have removed it.
+
+\newcommand{\placeholder}[2]{%
+  \begin{center}
+    \framebox{
+      \parbox{0.8\textwidth}{\hspace{2cm}
+        \vspace{2cm}
+        \textbf{#1}\\[5pt]
+        \small\textit{#2}
+        \vspace{2cm}
+      }
+    }
+  \end{center}
+}
+\begin{document}
+
+% --- TITLE PAGE ---
+\begin{frame}
+  \maketitle
+  \begin{center}
+    \vspace{1cm}
+    \large
+    \textbf{Under the guidance of} \\
+    Dr. Nidhi Lal
+  \end{center}
+\end{frame}
+
+% --- TABLE OF CONTENTS ---
+\begin{frame}
+  \frametitle{Outline}
+  \tableofcontents
+\end{frame}
+
+% --- SECTION: INTRODUCTION ---
+\section{Introduction}
+\begin{frame}
+  \frametitle{Introduction to ICN Architecture}
+  \begin{itemize}
+    \item<1-> Shift from Host-Centric (IP) to Content-Centric (focus on content, not location).
+    \item<2-> Routers act as forwarders and in-network caches (dual role).
+    \item<3-> \textbf{Packet Types:} Interest (request) and Data (respons
+    with content).
+    \item<4-> \textbf{Router Data Structures:}
+    \begin{itemize}
+        \item Content Store (CS)
+        \item Pending Interest Table (PIT)
+        \item Forwarding Info Base (FIB)
+    \end{itemize}
+    \item<5-> \textbf{Communication Flow:} Client sends an Interest, routers forward/cache, the server/cache responds with Data, and the Data packet returns along the path, being cached at intermediate routers.
+  \end{itemize}
+\end{frame}
+
+% --- SECTION: PROBLEM STATEMENT ---
+\section{Problem Statement}
+\begin{frame}
+  \frametitle{Problem Statement}
+  \begin{block}{Key Challenges}
+    \begin{itemize}
+      \item Traditional networks rely on static caching and routing, leading to inefficient resource utilization.
+      \item Redundancy and high cache churn are common due to inflexible caching policies.
+    \end{itemize}
+  \end{block}
+  \begin{alertblock}{The Need}
+    An intelligent topology optimization that adapts dynamically to network demand and topology changes is required.
+  \end{alertblock}
+\end{frame}
+
+% --- SECTION: BACKGROUND ---
+\section{Background}
+\begin{frame}
+  \frametitle{Background Concepts}
+  \begin{itemize}
+    \item \textbf{Content-Centric Networking (CCN):} Focuses on content availability and retrieval, not the host's location.
+    \item \textbf{Centrality Measures:} Metrics to identify the most important or "central" routers in a network topology.
+    \item \textbf{CMBA (Centrality-Measures Based Algorithm):} Uses centrality measures to select the most appropriate routers for caching content to improve performance.
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Centrality Measure Formulas}
+  \justify
+  Here are the core formulas used to identify influential nodes in the network.
+  \begin{columns}[T]
+    % Column 1: Degree and Closeness
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Degree Centrality $C_D(v)$}
+      The number of direct connections a node has.
+      \begin{equation}
+DC(CR_i) = \frac{degree(CR_i)}{(n - 1)}
+\end{equation}
+
+      \end{block}
+      \begin{block}{Closeness Centrality $C_C(v)$}
+      The reciprocal of the sum of the shortest path distances to all other nodes.
+      \begin{equation}
+CC(CR_i) = \frac{(n - 1)}{\displaystyle \sum_{\substack{j = 1 \\ j \neq i}}^{n} d(CR_i, CR_j)}
+\end{equation}
+
+      \end{block}
+    \end{column}
+     \end{columns}
+   \end{frame}
+   
+    \begin{frame}
+    
+     \begin{columns}
+        
+    
+    % Column 2: Betweenness and Reachness
+    \begin{column}{0.5\textwidth}
+      \begin{block}{Betweenness Centrality $C_B(v)$}
+      The fraction of all-pairs shortest paths that pass through a node.
+      \begin{equation}
+          BC(CR_i) = \sum_{i \neq CR_i \neq j \in n} \frac{\sigma_{i,j}(CR_i)}{\sigma_{i,j}}
+      \end{equation}
+      \end{block}
+      \begin{block}{Reach Centrality $C_R(v)$}
+      It defines how many no. of hops, a particular CR reaches to another CR
+     \begin{equation}
+RC(CR_i) = 1 + \sum_{x = 1}^{e(CR_i)} \frac{r_{ix}}{x}
+\end{equation}
+
+      
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+%Algorithm portion
+\begin{frame}[fragile]
+    \frametitle{Algorithm: Content Request}
+    \begin{block}{Algorithm 1: Content request}
+    \begin{algorithmic}[1]
+        \State Initialize (CMV=0)
+        
+        \For{for each ($CR_n$ from i to j do )}
+        
+            \If{if content item in the CS of CR then }
+            
+                \State send towards the client.
+                
+                \State send(data)
+                
+            \Else else
+            
+                \State      Calculate CMV at each CR upon arriving of interest with respect to a client.
+                
+                \If{if calculated value of CMV $>$ CMV stored in an interest}
+                
+                    \State Then, update CMV with router-id into interest.
+                    
+                \Else else
+                
+                    \State Forward request to the next hop towards j.
+                \EndIf
+            \EndIf
+        \EndFor
+    \end{algorithmic}
+    \end{block}
+\end{frame}
+
+% --- SECTION: PROJECT IDEA & OBJECTIVES ---
+\section{Project Idea \& Objectives}
+\begin{frame}
+  \frametitle{Project Idea \& Objectives}
+  \begin{block}{Core Idea}
+    To develop a Deep Reinforcement Learning (DRL) agent that dynamically optimizes caching and routing decisions in the network.
+  \end{block}
+  \begin{block}{Objectives}
+    \begin{itemize}
+        \item Implement and evaluate the baseline CMBA.
+        \item Integrate a DRL agent to enhance decision-making.
+        \item Evaluate overall performance improvement in terms of:
+        \begin{itemize}
+            \item Cache Hit Ratio (CHR)
+            \item Hop Reduction Ratio (HRR)
+            \item Latency \& Throughput
+        \end{itemize}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+
+
+% --- SECTION: RESULTS ---
+\section{Results So Far}
+\begin{frame}
+  \frametitle{Comparison of Caching Strategies}
+  This table shows the performance metrics with and without the Centrality-Measures Based Algorithm (CMBA).
+  \begin{table}[h]
+    \centering
+    \begin{tabular}{l c c}
+      \toprule
+      \textbf{Metric} & \textbf{Without CMBA} & \textbf{With CMBA} \\
+      \midrule
+      CHR (Cache Hit Ratio) & 2.391 & 2.706 \\
+      HRR (Hop Reduction Ratio) & 0.745 & 0.843 \\
+      Latency (ms) & 0.1086 & 0.0943 \\
+      \bottomrule
+    \end{tabular}
+    \caption{Performance comparison based on simulation results.}
+  \end{table}
+  \begin{alertblock}{Observation}
+  The introduction of CMBA shows a notable improvement in Cache Hit Ratio and Hop Reduction Ratio, along with a decrease in latency.
+  \end{alertblock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance Graph: Cache Hit Ratio (CHR)}
+  \justify
+  This graph shows the improvement in Cache Hit Ratio over simulation iterations.
+  
+  % --- IMAGE PLACEHOLDER ---
+  % To add your image, replace the line below with:
+  % \includegraphics[width=0.8\textwidth]{comparison_iter_chr_improved.png}
+  %\includegraphics[width=0.8\textwidth]{chr.png}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance Graph: Hop Reduction Ratio (HRR)}
+  \justify
+  This graph illustrates the reduction in the average number of hops required to fetch content.
+  
+  % --- IMAGE PLACEHOLDER ---
+  % To add your image, replace the line below with:
+  % \includegraphics[width=0.8\textwidth]{comparison_iter_hrr_improved.png}
+%\includegraphics[width=0.8\textwidth]{hrr.png}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Performance Graph: Latency}
+  \justify
+  This graph shows the trend of content retrieval latency across simulation iterations.
+
+  % --- IMAGE PLACEHOLDER ---
+  % To add your image, replace the line below with:
+  % \includegraphics[width=0.8\textwidth]{comparison_iter_latency_improved.png}
+ %\includegraphics[width=0.8\textwidth]{let.png}
+
+\end{frame}
+
+% --- SECTION: EXPECTED OUTCOMES ---
+\section{Expected Outcomes}
+\begin{frame}
+  \frametitle{Expected Outcomes}
+  \begin{itemize}
+    \item A more intelligent and adaptive network topology.
+    \item Optimized cache placement for better resource utilization.
+    \item Reduced content retrieval latency and redundancy in large-scale networks.
+  \end{itemize}
+\end{frame}
+
+% --- SECTION: TOOLS & TECHNOLOGIES ---
+\section{Tools \& Technologies}
+\begin{frame}
+  \frametitle{Tools \& Technologies}
+    \begin{itemize}
+        \item \textbf{Simulator:} Custom Python Simulator
+        \item \textbf{Algorithms:} Centrality Measures (CMBA), Reinforcement Learning (Q-Learning / Deep RL)
+        \item \textbf{Languages:} Python
+        \item \textbf{Evaluation Metrics:} Cache hit ratio, server hit reduction, hop reduction, latency, and throughput.
+    \end{itemize}
+\end{frame}
+
+% --- SECTION: CONCLUSION ---
+\section{Conclusion}
+\begin{frame}
+  \frametitle{Conclusion}
+  Our project aims to:
+  \begin{itemize}
+    \item Develop a scalable and intelligent topology optimization framework.
+    \item Extend the centrality-based selection mechanism using a Large Action Model (LAM).
+    \item Ultimately, create a more efficient Content-Centric Network for modern data demands.
+  \end{itemize}
+\end{frame}
+
+% --- SECTION: REFERENCES ---
+\section{References}
+\begin{frame}
+  \frametitle{References}
+  \begin{thebibliography}{99}
+    \bibitem{lal2017}
+    Kumari Nidhi Lal, Anoj Kumar (2017).
+    \newblock A Centrality-measures based Caching Scheme for Content-centric Networking (CCN).
+    \newblock \textit{Multimedia Tools and Applications}.
+    
+    \bibitem{fyp2024}
+    AI-Driven Dynamic Cache Policy Selection in Information-Centric Networking (FYP Thesis 2024-25).
+
+  \end{thebibliography}
+\end{frame}
+
+% --- FINAL SLIDE ---
+\begin{frame}
+  \centering
+  \vspace*{2cm}
+  \Huge\bfseries Thank You
+  \vfill
+  \Large Questions?
+\end{frame}
+
+\end{document}
+% =================================================================
+% --- END PRESENTATION ---
+% =================================================================

@@ -8,8 +8,12 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import pickle  # Import pickle for saving and loading 
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.ensemble import RandomForestClassifier
+try:
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.ensemble import RandomForestClassifier
+except ImportError:
+    StandardScaler = None
+    RandomForestClassifier = None
 
 
 # Base classes for Network elements
@@ -198,11 +202,13 @@ class Router(Node):
 
     def receive_data(self, data_packet):
         current_time = datetime.datetime.now()
-        # Remove expired content from the cache
+        # Remove expired content from the cache (safely)
         for content, expiry_time in list(self.cache_ttl.items()):
             if current_time > expiry_time:
-                self.cs.remove(content)
-                self.cache_ttl.pop(content)
+                if content in self.cs:
+                    self.cs.remove(content)
+                # Use pop with default to avoid KeyError if already removed
+                self.cache_ttl.pop(content, None)
                 self.log_event(f"Content {content} expired and removed from cache")
 
         ttl = current_time + datetime.timedelta(minutes=5)
@@ -569,6 +575,8 @@ def run_simulation_for_all_policies(routers, publishers, subscribers, iterations
     return all_simulation_data
 
 def load_model(filename):
+    if RandomForestClassifier is None:
+        return None
     with open(filename, 'rb') as file:
         model = pickle.load(file)
 
@@ -584,6 +592,8 @@ random_forest_model = load_model('model/random_forest_model.pkl')
 
 # Preprocess the data for prediction
 def preprocess_simulation_data(simulation_data):
+    if StandardScaler is None:
+        raise ImportError("scikit-learn is required for RandomForest-based prediction features.")
     # Convert the real-time simulation data into a DataFrame for prediction
     df = pd.DataFrame([simulation_data])
     # Feature scaling (use the same scaler as during training)
@@ -591,9 +601,9 @@ def preprocess_simulation_data(simulation_data):
     scaled_data = scaler.fit_transform(df)
     return scaled_data
 
-from sklearn.preprocessing import StandardScaler
-
 def predict_policy(model, simulation_data):
+    if StandardScaler is None:
+        raise ImportError("scikit-learn is required for RandomForest-based prediction.")
     # Use the simulation data to predict the next policy
     # Extract relevant features from the simulation data
     # The last row of simulation data contains the most recent metrics (No of Clients, Total Requests, etc.)
@@ -715,7 +725,7 @@ def plot_policy_comparison(policy_stats):
     plt.tight_layout()
     plt.show()
 
-def plot_network_graph(routers, publishers, subscribers):
+def plot_network_graph(routers, publishers, subscribers, out_path: str = None):
     if not isinstance(routers, list):
         raise TypeError(f"Expected routers to be a list, but got {type(routers)}")
 
@@ -760,6 +770,14 @@ def plot_network_graph(routers, publishers, subscribers):
     plt.title("Network Topology: Routers, Publishers, and Subscribers", fontsize=14, fontweight='bold')
     plt.axis('off')
     plt.tight_layout()
+    # Save to out_path if provided
+    if out_path:
+        try:
+            os.makedirs(os.path.dirname(out_path) if os.path.dirname(out_path) else '.', exist_ok=True)
+            plt.savefig(out_path, dpi=150, bbox_inches='tight')
+            print(f"[main.plot_network_graph] Saved topology visualization to: {out_path}")
+        except Exception as e:
+            print(f"[main.plot_network_graph] Failed to save topology visualization: {e}")
     plt.show()
 
 def plot_simulation_log(simulation_data, policy):
@@ -1524,6 +1542,65 @@ def plot_merged_graph(policy_stats):
     plt.tight_layout(rect=[0, 0.03, 1, 0.95])
     plt.show()
 
+def save_iteration_router_metrics(routers, iteration: int, path_label: str = "default_path"):
+    """
+    Append per-router metrics for this iteration to:
+      Path_Iterations/{path_label}_router_iteration_metrics.csv
+
+    routers: list of Router objects (must have .name, .cs, class attribute CACHE_LIMIT,
+             .cache_hits, .total_requests, .total_cache_access_time)
+    iteration: integer iteration index
+    path_label: string used to group outputs (use your path name)
+    """
+    os.makedirs("Path_Iterations", exist_ok=True)
+    outfn = os.path.join("Path_Iterations", f"{path_label.replace(' ','_')}_router_iteration_metrics.csv")
+    header = ["iteration","Router","CacheOccupancy","CacheOccupancyPct","CHR","Latency_ms"]
+
+    write_header = not os.path.exists(outfn)
+    with open(outfn, mode="a", newline="") as f:
+        writer = csv.writer(f)
+        if write_header:
+            writer.writerow(header)
+
+        for r in routers:
+            # router name
+            rname = getattr(r, "name", str(r))
+
+            # occupancy
+            cs = getattr(r, "cs", [])
+            occ = len(cs)
+
+            # capacity (class attribute)
+            cap = getattr(r.__class__, "CACHE_LIMIT", None)
+            occ_pct = (occ / cap * 100.0) if (cap and cap > 0) else float('nan')
+
+            # CHR: cache_hits / total_requests (guard divide by zero)
+            ch = getattr(r, "cache_hits", None)
+            total_req = getattr(r, "total_requests", None)
+            if total_req and total_req > 0 and ch is not None:
+                chr_val = float(ch) / float(total_req)
+            else:
+                chr_val = 0.0
+
+            # Latency: total_cache_access_time / total_requests (in seconds) -> convert to ms
+            total_cache_access_time = getattr(r, "total_cache_access_time", None)
+            if total_req and total_req > 0 and total_cache_access_time is not None:
+                latency_s = float(total_cache_access_time) / float(total_req)
+                latency_ms = latency_s * 1000.0
+            else:
+                latency_ms = float('nan')
+
+            writer.writerow([
+                int(iteration),
+                str(rname),
+                int(occ),
+                round(occ_pct, 3) if not math.isnan(occ_pct) else "",
+                round(chr_val, 6),
+                round(latency_ms, 6) if not math.isnan(latency_ms) else ""
+            ])
+
+    return outfn
+
 import pickle
 
 def main():
@@ -1574,8 +1651,8 @@ def main():
     save_results(policy_stats)
 
     # Plot the comparison of all policies in individual and merged graphs
-    plot_policy_comparison(policy_stats)
-    plot_merged_graph(policy_stats)  # New merged graph plot
+    #plot_policy_comparison(policy_stats)
+    #plot_merged_graph(policy_stats)  # New merged graph plot
 
     # Generate Global Popularity Table after all policies are simulated
     generate_global_ptable()
@@ -1609,4 +1686,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

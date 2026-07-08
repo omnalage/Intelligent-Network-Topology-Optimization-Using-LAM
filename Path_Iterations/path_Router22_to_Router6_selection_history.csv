@@ -1,0 +1,6 @@
+iteration,path_name,manual_chosen_router,manual_chosen_avg
+1,path_Router22_to_Router6,Router25,0.619632749438682
+2,path_Router22_to_Router6,Router25,0.6964867250251621
+3,path_Router22_to_Router6,Router25,0.6714738479732887
+4,path_Router22_to_Router6,Router25,0.6415662743193027
+5,path_Router22_to_Router6,Router25,0.6792587421409313

@@ -1,0 +1,5 @@
+Scenario,final_reward,avg_chr,avg_latency_ms,avg_occupancy
+1_Original_Train,-0.0048895687005597,0.0,16.75997423617615,0.0
+2_Changed_Fresh,-0.0058311536227549,0.0,8.582770130283064,0.0
+3_Changed_Adaptive,0.0,0.0,0.0,0.0
+4_Changed_Finetuned,-0.0046113595620811,0.0,1.5154106974028996,0.0

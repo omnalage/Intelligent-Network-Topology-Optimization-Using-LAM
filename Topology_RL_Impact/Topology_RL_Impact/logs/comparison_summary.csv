@@ -1,0 +1,4 @@
+Scenario,final_reward,avg_chr,avg_latency_ms,avg_occupancy
+1_Original,-0.0061123723394351,0.0,47.76122473180968,0.0
+2_Changed,0.0,0.0,0.0,0.0
+3_Adaptive,0.0,0.0,0.0,0.0
